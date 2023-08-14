@@ -4,7 +4,7 @@ This repository serves as a response to delphai's technical exercise for their i
 
 ## Exercise
 
-The sent pdf can be found here, but the content is the following:
+The sent [pdf can be found here](./files/devops-technical_task-delphai.pdf), but the content is the following:
 
 ###  Consistent backups script
 
@@ -33,7 +33,7 @@ Some points to consider:
 ## Repository Content
 
 The repository has the following content:
-- The sent DevOps technical task
-- The solutions for each of the exercises
-- A research/documentation MD file
-- A MD file describing the thought process behind each of the exercises
+- [The sent DevOps technical task](./files/devops-technical_task-delphai.pdf)
+- [The solutions for each of the exercises](./solutions/)
+- [A research/documentation MD file](./research.md)
+- [A MD file describing the thought process behind each of the exercises](./thinking.md)
