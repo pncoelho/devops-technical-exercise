@@ -1,10 +1,45 @@
+import re
+
 def validate_connection_string():
     # - Parse and check the passed connection string using RegEx
     #     - Validate the connection string is well constructed
     #     - Store the passed information in variables
     #     - If the string is not valid, exit the script
-    # TODO: create and call method to check passed parameters and return dict with information
-    return dict()
+
+    connection_string_syntax = "mongodb://username:password@host1[:port1][,...hostN[:portN]]/defaultauthdb[?options]"
+    # Groups:
+    #   0 - username
+    #   1 - password
+    #   2 - list of hosts
+    #   3 - authentication db
+    #   4 - additional options
+    connection_string_regex = r"^mongodb:\/\/(\w+):(\S+)@((?:[a-zA-Z0-9_.-]+(?::\d+)?)(?:,[a-zA-Z0-9_.-]+(?::\d+)?)*)\/(\w+)(?:\?((?:\w+=\w+)(?:&\w+=\w+)*))?$"
+
+    if len(sys.argv) != 1:
+        sys.exit(
+            'Wrong number of arguments!\n'
+            'One, and only one, argument is expected, which is a MongoDB connection string that conforms to this syntax:\n' + 
+            connection_string_syntax
+        )
+
+    matched_connection_string = re.search(connection_string_regex, sys.argv[0])
+
+    if matched_connection_string is None:
+        sys.exit(
+            'Wrong connection string!\n'
+            'Please check that the MongoDB connection string conforms to this syntax:\n' + 
+            connection_string_syntax
+        )
+    
+    parsed_connection_string = {
+        "username": matched_connection_string.group(0),
+        "password": matched_connection_string.group(1),
+        "hosts": matched_connection_string.group(2).split(","),
+        "authdb": matched_connection_string.group(3),
+        "adoptions": matched_connection_string.group(4),
+    }
+
+    return parsed_connection_string
 
 def get_mongo_repset_members(connection_string: str):
     # - Use [PyMongo](https://pymongo.readthedocs.io/en/stable/) to connect to the MongoDB replica set
