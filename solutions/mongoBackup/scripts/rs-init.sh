@@ -20,7 +20,7 @@ var config = {
         {
             "_id": 3,
             "host": "mongo3:27017",
-            "priority": 1
+            "priority": 0
         }
     ]
 };
