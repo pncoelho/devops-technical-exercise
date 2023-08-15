@@ -50,3 +50,14 @@ Command for cleaning up the replica set after use:
 ```bash
 docker-compose --file docker-compose-replicaset.yml stop && docker-compose --file docker-compose-replicaset.yml rm -f
 ```
+
+## Future Improvements
+
+In case this script would be used in production we should:
+- Write a test suite for the script
+- Create CI pipelines to test the script every time an update is made
+  - By taking advantage of the docker replica set
+  - Or by spinning up a cluster in a sandbox environment
+- Improve the resilience of the script to timeouts, disconnects and general failures
+- Add more logging to the script
+  - In case any sort of troubleshooting is required
