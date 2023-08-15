@@ -16,10 +16,12 @@ connection_string_syntax = "mongodb://username:password@host1[:port1][,...hostN[
 backup_script_path = "./make-vm-snapshot.sh"
 
 def validate_connection_string(connection_string: str):
-    # - Parse and check the passed connection string using RegEx
-    #     - Validate the connection string is well constructed
-    #     - Store the passed information in variables
-    #     - If the string is not valid, exit the script
+    """Parse and check the passed connection string using RegEx
+
+    Perform a regex validation of the connection string.
+    
+    Returns the connection string converted to a dictionary
+    """
 
     matched_connection_string = re.search(connection_string_regex, connection_string)
 
@@ -41,19 +43,26 @@ def validate_connection_string(connection_string: str):
     return parsed_connection_string
 
 def get_mongo_repset_members(connection_string: str):
-    # - Use [PyMongo](https://pymongo.readthedocs.io/en/stable/) to connect to the MongoDB replica set
-    # - Check that we're connected to a MongoDB replica set
-    # - Get the list of members and their priorities
-    # - End the connection to the replica set
-    # replica_set_hosts = {
-    #   "mongo1:27017": { "type": "primary", "priority": 2.0 },
-    #   'mongo2:27017': {'type': 'secondary', 'priority': 0.0},
-    #   'mongo3:27017': {'type': 'secondary', 'priority': 1.0}
-    # }
+    """Get a MongoDB replica set members
 
+    Use PyMongo to connect to the passed connection string and retrieve 
+    the list of replica set members
+
+    Returns a dictionary with the members, their type (primary or secondary) 
+    and their priority
+    Example:
+        replica_set_hosts = {
+            "mongo1:27017": { "type": "primary", "priority": 2.0 },
+            'mongo2:27017': {'type': 'secondary', 'priority': 0.0},
+            'mongo3:27017': {'type': 'secondary', 'priority': 1.0}
+        }
+    """
+
+    print("Connecting to replica set with the following connection string:\n{}\n".format(
+        connection_string))
     client = MongoClient(connection_string)
 
-    # Just to ensure connection is open
+    # Just to ensure the MongoClient has retrieved the node information
     # https://pymongo.readthedocs.io/en/stable/examples/high_availability.html#id1
     sleep(0.1);
 
@@ -72,38 +81,49 @@ def get_mongo_repset_members(connection_string: str):
             'Please review your deployment or check the connection string.\n'
         )
 
+    print("Connection successful.\nGathering replica set member information.\n")
+
     replica_set_hosts = {}
     replica_set_hosts[client.primary[0] + ":" + str(client.primary[1])] = {"type": "primary"}
     for secondary in client.secondaries:
         replica_set_hosts[secondary[0] + ":" + str(secondary[1])] = {"type": "secondary"}
 
+    # Use replica set configuration to get member's priorities
     for repset_member in client.admin.command("replSetGetConfig")['config']['members']:
         replica_set_hosts[repset_member["host"]]["priority"] = repset_member["priority"]
 
+    print("Information gathered, closing connection.\n")
     client.close()
 
     return replica_set_hosts
 
 def backup_mongo_instance(connection_string: str, hostname: str):
-    # - Connect to a secondary node
-    # - Perform the [`db.fsyncLock()`](https://www.mongodb.com/docs/manual/reference/method/db.fsyncLock/) on this secondary node
-    # - Run the backup script pointing to this node
-    # - Once the backup script ends, unlock the instance with [`db.fsyncUnlock()`](https://www.mongodb.com/docs/manual/reference/method/db.fsyncUnlock/#mongodb-method-db.fsyncUnlock)
+    """Perform a consistent backup of a MongoDB instance
 
+    Connects to the instance specified in the connection string, 
+    locks the instance, calls the backup script and unlocks the DB.
+    """
+
+    print("Connecting to MongoDB node with the following connection string:\n{}\n".format(
+        connection_string))
     client = MongoClient(connection_string)
     
     # Perform fsyncLock
+    print("Locking {}'s database for backup!\n".format(hostname))
     client.admin.command('fsync', lock=True)
 
     # Call backup script
+    print("Calling {} script for backup on {}\n".format(backup_script_path, hostname))
     backup_mongo_process = subprocess.Popen([backup_script_path, hostname])
     backup_mongo_process.wait()
     print("Backup command output:\n{}\n".format(
         backup_mongo_process.communicate()
     ))
 
-    # If DB locked unlock it
+    # Check if DB is still locked
     if client.admin.command('currentOp').get('fsyncLock'):
+        # Unlock DB
+        print("Unlocking {}'s database.\n".format(hostname))
         client.admin.command('fsyncUnlock')
 
     client.close()
@@ -126,6 +146,7 @@ def main():
     print("Parameters valid\nGathering information of replica set\n")
     replica_set_members = get_mongo_repset_members(passed_connection_string)
 
+    print("Choosing which secondary node to connect to.\n")
     # - Check if any of the secondary members is passive (priority is 0)
     #     - If we have one of these members, this would be the preferred one to run a backup on
     #     - If not, connect to one of the secondary nodes
@@ -140,14 +161,17 @@ def main():
                 break
     
     chosen_replica_set_node = chosen_replica_set_node if chosen_replica_set_node is not None else replica_set_secondaries[0]
+    print("Performing backup on {}.\n".format(chosen_replica_set_node))
 
-    print("Got MongoDB replica set information\nStarting backup process\n")
+    # Check if the replicaSet option was passed to the initial connection string
+    # if it was, remove it from the list of options
     connection_options_without_repset = [
         option
         for option in connection_string_information["options"].split("&")
         if "replicaSet" not in option]
     connection_options_without_repset = "&".join(connection_options_without_repset)
     
+    # Create connection string to connect to chosen secondary
     secondary_node_connection_string = "mongodb://{}:{}@{}/{}?{}".format(
         connection_string_information["username"],
         connection_string_information["password"],
@@ -156,6 +180,7 @@ def main():
         connection_options_without_repset
     )
 
+    print("Got MongoDB replica set information\nStarting backup process\n")
     backup_mongo_instance(secondary_node_connection_string, chosen_replica_set_node)
 
     print("Backup completed with success!\n")
