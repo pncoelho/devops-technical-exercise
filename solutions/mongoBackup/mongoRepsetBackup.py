@@ -1,32 +1,27 @@
 import re
 import sys
 import subprocess
+from time import sleep
 from pymongo import MongoClient
 
-def validate_connection_string():
+# Groups:
+#   0 - connection string
+#   1 - username
+#   2 - password
+#   3 - list of hosts
+#   4 - default db
+#   5 - additional options
+connection_string_regex = r"^mongodb:\/\/(\w+):(\S+)@((?:[a-zA-Z0-9_.-]+(?::\d+)?)(?:,[a-zA-Z0-9_.-]+(?::\d+)?)*)\/(\w+)?(?:\?((?:\w+=\w+)(?:&\w+=\w+)*))?$"
+connection_string_syntax = "mongodb://username:password@host1[:port1][,...hostN[:portN]]/defaultauthdb[?options]"
+backup_script_path = "./make-vm-snapshot.sh"
+
+def validate_connection_string(connection_string: str):
     # - Parse and check the passed connection string using RegEx
     #     - Validate the connection string is well constructed
     #     - Store the passed information in variables
     #     - If the string is not valid, exit the script
 
-    connection_string_syntax = "mongodb://username:password@host1[:port1][,...hostN[:portN]]/defaultauthdb[?options]"
-
-    # Groups:
-    #   0 - username
-    #   1 - password
-    #   2 - list of hosts
-    #   3 - default db
-    #   4 - additional options
-    connection_string_regex = r"^mongodb:\/\/(\w+):(\S+)@((?:[a-zA-Z0-9_.-]+(?::\d+)?)(?:,[a-zA-Z0-9_.-]+(?::\d+)?)*)\/(\w+)(?:\?((?:\w+=\w+)(?:&\w+=\w+)*))?$"
-
-    if len(sys.argv) != 1:
-        sys.exit(
-            'Wrong number of arguments!\n'
-            'One, and only one, argument is expected, which is a MongoDB connection string that conforms to this syntax:\n' + 
-            connection_string_syntax
-        )
-
-    matched_connection_string = re.search(connection_string_regex, sys.argv[0])
+    matched_connection_string = re.search(connection_string_regex, connection_string)
 
     if matched_connection_string is None:
         sys.exit(
@@ -36,11 +31,11 @@ def validate_connection_string():
         )
 
     parsed_connection_string = {
-        "username": matched_connection_string.group(0),
-        "password": matched_connection_string.group(1),
-        "hosts": matched_connection_string.group(2).split(","),
-        "defaultdb": matched_connection_string.group(3),
-        "options": matched_connection_string.group(4),
+        "username": matched_connection_string.group(1),
+        "password": matched_connection_string.group(2),
+        "hosts": matched_connection_string.group(3).split(","),
+        "defaultdb": matched_connection_string.group(4),
+        "options": matched_connection_string.group(5),
     }
 
     return parsed_connection_string
@@ -57,6 +52,10 @@ def get_mongo_repset_members(connection_string: str):
     # }
 
     client = MongoClient(connection_string)
+
+    # Just to ensure connection is open
+    # https://pymongo.readthedocs.io/en/stable/examples/high_availability.html#id1
+    sleep(0.1);
 
     if client.primary is None:
         sys.exit(
@@ -97,9 +96,11 @@ def backup_mongo_instance(connection_string: str, hostname: str):
     client.admin.command('fsync', lock=True)
 
     # Call backup script
-    backup_mongo_process = subprocess.Popen(["./make-vm-snapshot.sh", hostname])
+    backup_mongo_process = subprocess.Popen([backup_script_path, hostname])
     backup_mongo_process.wait()
-    print(backup_mongo_process.communicate())
+    print("Backup command output:\n{}\n".format(
+        backup_mongo_process.communicate()
+    ))
 
     # If DB locked unlock it
     if client.admin.command('currentOp').get('fsyncLock'):
@@ -111,10 +112,19 @@ def main():
     print("Starting Mongo Replica Set Backup execution\n")
 
     print("Validating passed parameters\n")
-    connection_string_information = validate_connection_string()
+    if len(sys.argv) != 2:
+        sys.exit(
+            'Wrong number of arguments!\n'
+            'One, and only one, argument is expected, which is a MongoDB connection string that conforms to this syntax:\n' + 
+            connection_string_syntax
+        )
+
+    passed_connection_string = sys.argv[1]
+
+    connection_string_information = validate_connection_string(passed_connection_string)
 
     print("Parameters valid\nGathering information of replica set\n")
-    replica_set_members = get_mongo_repset_members(sys.argv[0])
+    replica_set_members = get_mongo_repset_members(passed_connection_string)
 
     # - Check if any of the secondary members is passive (priority is 0)
     #     - If we have one of these members, this would be the preferred one to run a backup on
