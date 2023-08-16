@@ -149,3 +149,143 @@ db.fsyncUnlock();
 ### Development and testing environment
 - https://www.mongodb.com/compatibility/deploying-a-mongodb-cluster-with-docker
 - https://blog.devgenius.io/how-to-deploy-a-mongodb-replicaset-using-docker-compose-a538100db471
+
+## For 2. Design database setup for microservices
+**Knowledge Level:** `Novice`
+- No professional experience with Databases, other than running queries for developers
+- Same thing for Kubernetes, mostly academical experience
+
+### Blog post from Crunchy Data - [The Answer is Postgres; The Question is How?](https://www.crunchydata.com/blog/the-answer-is-postgres-the-question-is-how)
+
+#### Postgres on VMs
+
+> ... **trade-off between the level of effort** to maintain the database **against the flexibility** associated with your choice of **location for deployment** (on-premise, public cloud, etc.).
+> 
+> ... There are many tools for automating Postgres on VMs, enabling users to reduce the administrative level of effort. Automated or not, you are of course responsible for the database administration.
+> 
+> Often the choice of **Postgres on VMs is most appropriate when you already have the necessary internal infrastructure and expertise to run databases** and you **want control over both your database and infrastructure** ... In the *public cloud* you may prefer *VM-based Postgres deployments* due to *flexibility in version availability*, *configuration options* and *availability of extensions*.
+> 
+> In these cases, **Postgres on VMs provides the right balance of flexibility, control and investment**.
+
+#### Postgres on Kubernetes
+
+> ... The **ability to scale up nodes uniformly** makes it **easier to manage hardware** for databases as they grow. Kubernetes features like **node affinity** and **tolerations** allow admins to make decisions about **where Postgres instances are deployed**. These tools combine to **enable database workloads to benefit from high availability** or specific hardware.
+> 
+> ... Operators and tools such as Helm and Kustomize are all helpful in easing the administrative burden, but **automation and orchestration associated with Kubernetes does not come for free**.
+> 
+> In the context of Postgres, the question seems to boil down to **whether a user values the benefits of Kubernetes sufficiently to sustain the incremental administration**.
+
+#### Postgres on Managed Services
+
+> ... managed services are an attractive option for deploying databases. ... as **the ‘managed service’ handles a number of the database administration tasks** for you - including **backups**, **patching** and **scaling**.
+
+#### Which one to choose?
+
+> Postgres users **often choose some combination of these deployment models** based upon **their team requirements and organizational standards**. The choice is **less about deciding which model to use for all applications**, and **more about which choice to use for a given project**.
+> 
+> For many projects, using a **managed service** works well if the use cases require a "**set and forget**" Postgres deployment. The choice between deploying **Postgres on VMs and Kubernetes** is less about a decision for more or less management or automation but rather **based on whether a group is standardizing on Kubernetes**.
+
+![BlogDiagram-1](https://f.hubspotusercontent00.net/hubfs/2283855/BlogDiagram-1.png)
+
+### Blog post from Google Cloud - [To run or not to run a database on Kubernetes: What to consider](https://cloud.google.com/blog/products/databases/to-run-or-not-to-run-a-database-on-kubernetes-what-to-consider)
+
+Options for running databases on [Google Cloud Platform](https://cloud.google.com/) (GCP) and what they’re best used for:
+
+#### Fully managed databases
+	
+> ... This is the **low-ops choice**, since **Google Cloud handles** many of the maintenance tasks, like **backups**, **patching** and **scaling** ... You just create a database, build your app, and let Google Cloud scale it for you. This **also means you might not have access to the exact version of a database**, **extension**, or the **exact flavor of database** that you want.
+
+#### Do-it-yourself on a VM
+	
+> ... the **full-ops option**, where you take **full responsibility for building your database**, **scaling it**, **managing reliability**, **setting up backups**, and more. All of that can be a lot of work, **but you have all the features and database flavors** at your disposal.
+
+#### Run it on Kubernetes
+	
+> ... closer to the **full-ops option**, but you do get **some benefits in terms** of the **automation** Kubernetes provides **to keep the database application running**. That said, it is important to remember that pods (the database application containers) are transient, so **the likelihood of database application restarts or failovers is higher**. Also, **some of the more database-specific administrative tasks**—backups, scaling, tuning, etc.—**are different due** to the added abstractions that come with containerization.
+
+#### Tips for running your database on Kubernetes
+
+>  Since pods are mortal, the likelihood of failover events is higher than a traditionally hosted or fully managed database. It will be **easier to run a database on Kubernetes if it includes concepts like sharding**, **failover elections** and **replication** built into its DNA (for example, ElasticSearch, Cassandra, or MongoDB).
+
+> Some open source projects provide *custom resources* and *operators* to *help with managing the database*.
+
+> Next, *consider the function that database is performing* in the context of your application and business. Databases that are storing **more transient and caching layers are better fits for Kubernetes**. Data layers of that type *typically have more resilience built into the applications, making for a better overall experience*.
+
+> Finally, be sure you **understand the replication modes available** in the database. **Asynchronous modes of replication leave room for data loss**, because *transactions might be committed to the primary database but not to the secondary database(s)*. So, be sure to understand whether you might incur data loss, and how much of that is acceptable in the context of your application.
+
+![https://storage.googleapis.com/gweb-cloudblog-publish/images/Tech_Diag_K8s_Database_Bl.0734067713421317.max-1500x1500.png](https://storage.googleapis.com/gweb-cloudblog-publish/images/Tech_Diag_K8s_Database_Bl.0734067713421317.max-1500x1500.png)
+
+#### How to deploy a database on Kubernetes
+
+> ... With a **StatefulSet**, your **data can be stored on persistent volumes**, decoupling the database application from the persistent storage, so **when a pod** (such as the database application) **is recreated**, **all the data is still there**. Additionally, **when a pod is recreated** in a StatefulSet, **it keeps the same name**, so you have a **consistent endpoint** to connect to. *Persistent data and consistent naming are two of the largest benefits of StatefulSets*. You can check out the Kubernetes [documentation](https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/) for more details.
+
+> If you need to **run a database that doesn’t perfectly fit the model of a Kubernetes-friendly database** (such as *MySQL* or *PostgreSQL*), consider **using Kubernetes Operators or projects that wrap those database with additional features**. [Operators](https://coreos.com/operators/) will help you spin up those databases and perform database maintenance tasks like backups and replication. For MySQL in particular, take a look at the [Oracle MySQL Operator](https://github.com/oracle/mysql-operator) and [Crunchy Data](https://github.com/CrunchyData/postgres-operator) for PostgreSQL.
+
+> Operators use [custom resources](https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/) and controllers to expose application-specific operations through the Kubernetes API. For example, to perform a backup using Crunchy Data, simply execute `pgo backup [cluster_name]`. To add a Postgres replica, use `pgo scale cluster [cluster_name]`.
+
+> There are some other projects out there that you might explore, such as [Patroni](https://github.com/zalando/patroni) for PostgreSQL. These projects use Operators, but go one step further. They’ve built many tools around their respective databases to aid their operation inside of Kubernetes. They may include additional features like sharding, leader election, and failover functionality needed to successfully deploy MySQL or PostgreSQL in Kubernetes.
+
+### Blog post from RedHat - [Data resiliency for PostgreSQL: Crunchy Data PostgreSQL on Red Hat OpenShift](https://www.redhat.com/en/resources/crunchy-data-postgresql-overview?CrunchyAnonId=ybuarqjrbqqjvryfovjppajpuikguzoojdvvucvmdibawpyr)
+
+Not really super relevant to this topic, but points out the **importance of considering Storage-layer resiliency** (ensuring that the data is persistent and properly stored) in **considering a DB solution**
+
+### Blog post from NetApp - [Azure PostgreSQL: Managed or Self-Managed?](https://bluexp.netapp.com/blog/azure-cvo-blg-azure-postgresql-managed-or-self-managed)
+
+#### Pros and Cons of Fully Managed PostgreSQL in Azure
+##### Pros of fully-managed PostgreSQL in Azure
+
+> Fully managed high availability, backup, patching and updates. Most ongoing maintenance efforts are taken care of as part of the managed service.
+
+*Flexible Server*: Scaling resources up and down, and scaling storage up, in the Azure Portal or using the Azure CLI.
+
+> ... *PostgreSQL Hyperscale* (Citrus), ... automatically shard your database and dynamically scale workloads across multiple machines.
+
+> ... storage is an integrated part of the service, and scales automatically based on usage up to 4TB.
+
+##### Cons of fully-managed PostgreSQL in Azure
+
+Azure SQL Database for PostgreSQL **only supports certain PostgreSQL versions**, which *might require upgrading Databases to migrate*
+
+> There is also **no guarantee of the exact DB maintenance time** ... Microsoft advises not to performing long running transactions during the planned maintenance window.
+
+> The DBaaS services are deployed in Azure and can be connected to local data centers in a **hybrid configuration using read replicas**. However, **hybrid deployment is not supported for Flexible Server or Hyperscale** (Citrus).
+
+> ... Database backup is automated, but the schedule and frequency may not always align with your organization’s data protection DR requirements ...
+
+Azure Database for PostgreSQL instances have a hardware cap
+
+> Limit on the number of IOPS supported ...
+
+> Migration between major versions of PostgreSQL is not supported ...
+
+#### Pros and Cons of Self-Managed PostgreSQL in Azure
+
+##### Pros of self-managed PostgreSQL in an Azure VM
+
+Full end-to-end control
+
+> Less expensive than managed options, because you are only paying for compute and storage resources (as well as for the Marketplace image, if you selected a paid option).
+
+> Supports all PostgreSQL versions ...
+
+> You can perform maintenance at any time ...
+
+> Easy to connect your cloud-based database to an on-premises data center.
+
+> Full flexibility to configure schedule and frequency of backups according to your organization’s disaster recovery requirements.
+
+> Ability to use high performance storage services ...
+
+> You can deploy the database on any instance size ...
+
+> No hard limit on the number of IOPS or connections ...
+
+##### Cons of self-managed PostgreSQL in an Azure VM
+
+> When running in an Azure VM, you own the configuration of high availability, backup management, patching, etc. This requires additional effort.
+
+> It is up to you to devise a scaling strategy for compute resources, and configure it using auto scaling features available in Azure VMs ...
+
+> More difficult to manage storage, which relies on Azure managed disks ...
+
+### [Deploy Postgres in Horizontally Scalable Architecture using Kubernetes, Docker, and Kafka on IBM Cloud](https://medium.com/@PankajSinghV/deploy-postgres-in-horizontally-scalable-architecture-using-kubernetes-docker-and-kafka-on-ibm-b29e2ccda26b)
