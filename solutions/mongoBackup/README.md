@@ -17,12 +17,12 @@ This environment is:
   - *1 primary*
   - *1 secondary*
   - *1 passive secondary*
-- Deployed in **docker** containers
+- Deployed in **docker**
 - Using **docker-compose**
 
 Most of the structure is copied from the [How to deploy a MongoDB replica set using docker-compose Medium post](https://blog.devgenius.io/how-to-deploy-a-mongodb-replicaset-using-docker-compose-a538100db471), with a few adaptations to the latest version of MongoDB.
 
-To run the environment you just need to run the [start cluster helper script](./startReplicaSetEnvironment.sh) (*you'll need to have docker installed*).
+To run the environment you just need to run the [start cluster helper script](./startReplicaSetEnvironment.sh) (*but you do need to have docker installed*).
 
 ### Describing the Testing Environment
 

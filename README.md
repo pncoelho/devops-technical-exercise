@@ -1,10 +1,10 @@
-# DevOps Technical Exercise
+# DevOps Technical Exercises
 
-This repository serves as a response to a DevOps technical exercise.
+This repository serves as a collection of DevOps technical exercises and their (*proposed*) solutions
 
-## Exercise
+## Exercises
 
-The sent [pdf can be found here](./files/devops-technical_task.pdf), but the content is the following:
+Sent exercises [can be found here](./files/), but you can find the same content here:
 
 ###  Consistent backups script
 
@@ -33,7 +33,7 @@ Some points to consider:
 ## Repository Content
 
 The repository has the following content:
-- [The sent DevOps technical task](./files/devops-technical_task.pdf)
-- [The solutions for each of the exercises](./solutions/)
+- [DevOps technical exercises files](./files/)
+- [The solutions for each of the exercises](./solutions/README.md)
 - [A research/documentation MD file](./research.md)
 - [A MD file describing the thought process behind each of the exercises](./thinking.md)
