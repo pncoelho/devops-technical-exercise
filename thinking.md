@@ -117,7 +117,7 @@ For test we have less strict availability and performance requirements, but we s
 
 ### Single server/cluster, server/cluster per environment or server/cluster per application
 
-First let's rule out the single cluster approach and consider the following options:
+Let's consider the following options:
 1. *Single cluster*
 2. *Cluster per environment*
 3. *Cluster per application*
