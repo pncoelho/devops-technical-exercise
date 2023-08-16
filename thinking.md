@@ -160,6 +160,25 @@ Here we have 4 factors to consider:
   - Between №2 and №3 varies, but I would say *№3 has one advantage*
     - It makes it **easier to know which application has the biggest spending in term of database cluster costs**, since we have cluster per applications
 
+Taking these 4 factors in considerations, the suggestion would be as follows:
+- *Cluster per environment per application*
+  - **Isolation** (security) **and flexibility are the driving factors**
+  - **High level of db management maturity is a requirement**
+  - **Cost isn't an inhibiter**
+- *Cluster per environment*
+  - **Isolation is a concern**
+  - **A good level of db management maturity is required**
+  - **Provides a cheaper and easier solution to manage than a cluster per environment per application**
+- *Groups of clusters separated by environment*
+  - Instead of having a cluster per environment, or one cluster per environment per application, we could have **groups of applications that use a set of clusters per environment**
+    - Imagine an example with 4 cluster:
+    - *Cluster A1* and *B1* would be *production* for *application groups A and B*
+    - *Cluster A2* and *B2* would be *testing* for *application groups A and B*
+  - Provides **some isolation between application, and full isolation per environment**
+  - Is **not as expensive or effort requiring as the cluster per environment per application**
+
+> Being *Cluster per environment* and *Groups of clusters separated by environment* the n1 and n2 most common options, and *Cluster per environment per application* usually reserved for companies with a lot of resources and teams
+
 ### How to manage and provision accounts for applications and people
 
 One thing that helps managing users easier is to *use roles to assign permissions to groups whenever possible*, **never managing user permissions individually per user**.
