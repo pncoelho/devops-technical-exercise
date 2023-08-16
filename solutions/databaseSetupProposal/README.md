@@ -114,10 +114,19 @@ In this scenario it is stated that *"These services need an **isolated Postgres 
    - You get a bit of the **advantages of No2**, but try and **keep costs down like No3**
    - *One challenge this scenario poses is that sometimes is not clear how to group application together*
 
+### User Access and Management
+
+One thing that helps managing users easier is to *use roles to assign permissions to groups whenever possible*, **never managing user permissions individually per user**.
+
+Another aspect that helps is **configuring users, groups, roles and permissions through IaC**, *using some configuration management tool*. This provides the following advantages:
+- **Identity management is done and tracked via code**
+- **Changes to this code are reviewed, approved and** *can be* **automatically deployed** 
+- Helps ensure **standardization of identity management**
+
 ### Conclusion
 
 In the end, with only the information give the only thing we can confidently suggests is:
-- Using DB clusters and not single servers
+- **Using DB clusters and not single servers**
 - Using at least one DB cluster per environment, but consider a cluster per environment per group of applications or even a cluster per environment per application
 
 The deployment type (managed, VM or k8s) cannot be suggested since more information would be required and the same thing goes for separating the applications and environments.
