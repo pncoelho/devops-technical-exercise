@@ -1,0 +1,24 @@
+---
+# The current version of the file serves to ensure that no strange
+# characters exist in yaml files, but no other validation is being done
+extends: default
+
+rules:
+  anchors:
+    level: warning
+  braces: 
+    level: warning
+  brackets: 
+    level: warning
+  commas: 
+    level: warning
+  colons: disable
+  comments: disable
+  line-length: disable
+  trailing-spaces: disable
+  new-line-at-end-of-file: disable
+  empty-lines: disable
+  indentation: disable
+  document-start: disable
+  truthy: disable
+  comments-indentation: disable
