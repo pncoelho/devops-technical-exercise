@@ -1,4 +1,2 @@
----
-
 env:
-  os: "linux:
+  os: "linux"
