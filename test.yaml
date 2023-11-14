@@ -1,3 +1,4 @@
 ---
-test: something
-  variable1: disabled
+
+env:
+  os: "linux:
